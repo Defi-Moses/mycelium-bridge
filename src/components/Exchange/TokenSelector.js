@@ -12,8 +12,6 @@ import Modal from "../Modal/Modal";
 import dropDownIcon from "../../img/DROP_DOWN.svg";
 import "./TokenSelector.css";
 
-import { Tokens } from "@synapseprotocol/sdk";
-
 export default function TokenSelector(props) {
   const [isModalVisible, setIsModalVisible] = useState(false);
   const [searchKeyword, setSearchKeyword] = useState("");
@@ -110,12 +108,12 @@ export default function TokenSelector(props) {
                 className="TokenSelector-token-row"
                 onClick={() => {
                   onSelectToken(token);
-                  trackAction && trackAction("Button clicked", {
-                    buttonName: `${props.label} Token Selection modal option - ${token.symbol}`,
-                  });
+                  trackAction &&
+                    trackAction("Button clicked", {
+                      buttonName: `${props.label} Token Selection modal option - ${token.symbol}`,
+                    });
                 }}
                 key={token.address}
-                tokenType = {Tokens.AllTokens.filter(tok => (tok.addresses == token.address))[0]}
               >
                 <div className="Token-info">
                   {showTokenImgInDropdown && (
@@ -150,9 +148,10 @@ export default function TokenSelector(props) {
         className="TokenSelector-box"
         onClick={() => {
           setIsModalVisible(true);
-          trackAction && trackAction("Button clicked", {
-            buttonName: `Token selector box`,
-          });
+          trackAction &&
+            trackAction("Button clicked", {
+              buttonName: `Token selector box`,
+            });
         }}
       >
         {tokenInfo.symbol}

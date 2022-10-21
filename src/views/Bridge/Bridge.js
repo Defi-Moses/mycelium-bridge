@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { ethers, BigNumber} from "ethers";
+import { ethers, BigNumber } from "ethers";
 import { useWeb3React } from "@web3-react/core";
 import useSWR from "swr";
 import { IoMdSwap } from "react-icons/io";
@@ -17,7 +17,7 @@ import {
   formatAmount,
 } from "../../Helpers";
 import TokenSelector from "../../components/Exchange/TokenSelector";
-import { getTokens, getToken, getWhitelistedTokens, getTokenBySymbol } from "../../data/Tokens";
+import { getTokens, getToken, getWhitelistedTokens, getTokenBySymbol, TOKENS } from "../../data/Tokens";
 import { getConstant } from "../../Constants";
 import Token from "../../abis/Token.json";
 import * as Styles from "./Bridge.styles";
@@ -29,7 +29,7 @@ import chevronDownIcon from "../../img/chevron-down-white.svg";
 import { SettingsDropdown } from "../../components/Bridge/SettingsDropdown";
 
 import { Tokens } from "@synapseprotocol/sdk";
-import {CHAINID_NETWORK_MAP, ChainGasAirdrop, ChainGasAirdropToken } from "./BridgeMappings.js"
+import { CHAINID_NETWORK_MAP, ChainGasAirdrop, ChainGasAirdropToken } from "./BridgeMappings.js";
 
 const { AddressZero } = ethers.constants;
 
@@ -54,17 +54,15 @@ export default function Bridge(props) {
   const [isWaitingForApproval, setIsWaitingForApproval] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const [fromNetwork, setFromNetwork] = useState(SUPPORTED_NETWORKS[chainId]);
-  const [toNetwork, setToNetwork] = useState(SUPPORTED_NETWORKS[1]);
+  const [fromNetwork, setFromNetwork] = useState(42161);
+  const [toNetwork, setToNetwork] = useState(1);
   const [fromTokenAddress, setFromTokenAddress] = useState(defaultTokenSelection.from);
   const [toTokenAddress, setToTokenAddress] = useState(defaultTokenSelection.to);
 
   const [fromTokenType, setFromTokenType] = useState(Tokens.USDC);
   const [toTokenType, setToTokenType] = useState(Tokens.USDC);
 
-  const [transactionFee, setTransactionFee]= useState()
-
-  
+  const [transactionFee, setTransactionFee] = useState();
 
   const [slippage, setSlippage] = useState(-0.14);
   const [selectedSetting, setSelectedSetting] = useState("High Return");
@@ -99,19 +97,27 @@ export default function Bridge(props) {
 
   const onSelectFromToken = (token) => {
     setFromTokenAddress(token.address);
-    setFromTokenType(Tokens.AllTokens.filter(tok => (tok.addresses == token.address))[0])
+    setFromTokenType(Tokens.AllTokens.filter((tok) => tok.addresses == token.address)[0]);
   };
 
   const onSelectToToken = (token) => {
     setToTokenAddress(token.address);
-    setToTokenType(Tokens.AllTokens.filter(tok => (tok.addresses == token.address))[0])
+    setToTokenType(Tokens.AllTokens.filter((tok) => tok.addresses == token.address)[0]);
   };
 
-  const whitelistedTokens = getWhitelistedTokens(chainId);
-  const toTokens = whitelistedTokens.filter((token) => !token.isStable && !token.isWrapped);
-  const fromTokens = getTokens(chainId);
+  // const whitelistedTokens = getWhitelistedTokens(chainId);
+  // const toTokens = whitelistedTokens.filter((token) => !token.isStable && !token.isWrapped);
+  // const fromTokens = getTokens(chainId);
   const fromTokenInfo = getTokenInfo(infoTokens, fromTokenAddress);
   const fromBalance = fromTokenInfo ? fromTokenInfo.balance : bigNumberify(0);
+
+  //Getting correct to and from tokens (supported by synapse)
+  const toTokens = TOKENS[toNetwork].filter(
+    (tok) => tok.symbol == "USDC" || tok.symbol == "USDT" || tok.symbol == "ETH"
+  );
+  const fromTokens = TOKENS[fromNetwork].filter(
+    (tok) => tok.symbol == "USDC" || tok.symbol == "USDT" || tok.symbol == "ETH"
+  );
 
   const switchTokensAndNetwork = () => {
     const tempFromToken = fromTokenAddress;
@@ -129,11 +135,11 @@ export default function Bridge(props) {
     if (!active) {
       return "Connect Wallet";
     }
-    if(active && needApproval){
-      return ("Approve" + JSON.stringify(fromTokenType.symbol)) 
+    if (active && needApproval) {
+      return "Approve" + JSON.stringify(fromTokenType.symbol);
     }
-    if(active && !needApproval){
-      return "Bridge"
+    if (active && !needApproval) {
+      return "Bridge";
     }
     if (!isSupportedChain(chainId)) {
       return "Incorrect Network";
@@ -178,8 +184,8 @@ export default function Bridge(props) {
       return;
     }
 
-    if(active && !needApproval){
-      onClickBridge()
+    if (active && !needApproval) {
+      onClickBridge();
     }
   };
 
@@ -220,90 +226,91 @@ export default function Bridge(props) {
   let populatedBridgeTokenTxn;
   let estimate;
 
-        // UseEffect that updates all necessary outputs when input state changes.
-        useEffect(() => {
-  
-          const DUMMY_BRIDGE = new Bridge.SynapseBridge({
-              network: CHAINID_NETWORK_MAP[chainId]
-          })
-          if(fromValue > 0) {
-              const getEstimate = 
-              //     Get a quote for amount to receive from the bridge
-                  DUMMY_BRIDGE.estimateBridgeTokenOutput({
-                      tokenFrom: fromTokenType, // token to send from the source chain, in this case USDT on Avalanche
-                      //need to edit the below
-                      chainIdTo: Object.keys(toNetwork), // Chain ID of the destination chain, in this case BSC
-                      tokenTo: toTokenType, // Token to be received on the destination chain, in this case USDC
-                      amountFrom: BigNumber.from(fromValue).mul(10**6)
-              });
-              getEstimate.then(res => setToValue(res.amountToReceive))
-              getEstimate.then(res => setTransactionFee(res.bridgeFee/1000000000000000000))
-          }  
-          else{
-            setToValue(0)
-            //need to create state variables for the below
-            //set gas & gas token 
-          }
-          //set all variables to update effect on with correct states
-      },[])
-      
-
-  const onClickApprove = async () => {
-      try {
-          const SYNAPSE_BRIDGE = new Bridge.SynapseBridge({
-              network: CHAINID_NETWORK_MAP[chainId]
-            })
-          // Create a populated transaction for approving token spending
-          populatedApproveTxn = await SYNAPSE_BRIDGE.buildApproveTransaction({
-            //need to update list for token type
-              token: fromTokenType,
-          });
-      } catch (e) {
-          // handle error if one occurs
+  // UseEffect that updates all necessary outputs when state changes.
+  useEffect(() => {
+    //make sure chains are setup correctly
+    if (chainId != fromNetwork) {
+      if (chainId == 1) {
+        //change network to 42161
+        setFromNetwork(1);
+        setToNetwork(42161);
       }
-      // Sign and send the transaction
-      signer.sendTransaction(populatedApproveTxn);
-  };
-  const onClickBridge = async () => {
-      const SYNAPSE_BRIDGE = new Bridge.SynapseBridge({
-          network: CHAINID_NETWORK_MAP[chainId]
-        })
-      // Get a quote for amount to receive from the bridge
-      estimate = await SYNAPSE_BRIDGE.estimateBridgeTokenOutput({
+      if (chainId == 42161) {
+        //change network to 42161
+        setFromNetwork(42161);
+        setToNetwork(1);
+      }
+    }
+    const DUMMY_BRIDGE = new Bridge.SynapseBridge({
+      network: CHAINID_NETWORK_MAP[chainId],
+    });
+    if (fromValue > 0) {
+      const getEstimate =
+        //     Get a quote for amount to receive from the bridge
+        DUMMY_BRIDGE.estimateBridgeTokenOutput({
           tokenFrom: fromTokenType, // token to send from the source chain, in this case USDT on Avalanche
+          //need to edit the below
           chainIdTo: Object.keys(toNetwork), // Chain ID of the destination chain, in this case BSC
           tokenTo: toTokenType, // Token to be received on the destination chain, in this case USDC
-          amountFrom: parseUnits(
-              JSON.stringify(fromValue),
-              BigNumber.from(fromTokenType.decimals(chainId))
-              ),        
+          amountFrom: BigNumber.from(fromValue).mul(10 ** 6),
+        });
+      getEstimate.then((res) => setToValue(res.amountToReceive));
+      getEstimate.then((res) => setTransactionFee(res.bridgeFee / 1000000000000000000));
+    } else {
+      setToValue(0);
+      setTransactionFee("");
+      //need to create state variables for the below
+      //set gas & gas token
+    }
+  }, [fromToken, toToken, fromTokenType, toTokenType, fromAmount, fromNetwork, toNetwork]);
+
+  const onClickApprove = async () => {
+    try {
+      const SYNAPSE_BRIDGE = new Bridge.SynapseBridge({
+        network: CHAINID_NETWORK_MAP[chainId],
       });
-      try {
-          // Create a populated transaction for bridging
-          populatedBridgeTokenTxn =
-          await SYNAPSE_BRIDGE.buildBridgeTokenTransaction({
-              tokenFrom: fromTokenType, // token to send from the source chain, in this case nUSD on Avalanche
-              chainIdTo: Object.keys(toNetwork), // Chain ID of the destination chain, in this case BSC
-              tokenTo: toTokenType, // Token to be received on the destination chain, in this case USDC
-              amountFrom: parseUnits(
-                  JSON.stringify(fromValue),
-                  BigNumber.from(fromTokenType.decimals(chainId))
-                  ), // Amount of `tokenFrom` being sent
-              amountTo: estimate.amountToReceive, // minimum desired amount of `tokenTo` to receive on the destination chain
-              //need to get the address
-              addressTo: address, // the address to receive the tokens on the destination chain
-          });
-      } catch (e) {
-          // handle error if one occurs
-      }
-      // Sign and send the transaction
-      //make sure im getting the signer correctly
-      await signer.sendTransaction(populatedBridgeTokenTxn);
+      // Create a populated transaction for approving token spending
+      populatedApproveTxn = await SYNAPSE_BRIDGE.buildApproveTransaction({
+        //need to update list for token type
+        token: fromTokenType,
+      });
+    } catch (e) {
+      // handle error if one occurs
+    }
+    // Sign and send the transaction
+    signer.sendTransaction(populatedApproveTxn);
+  };
+  const onClickBridge = async () => {
+    const SYNAPSE_BRIDGE = new Bridge.SynapseBridge({
+      network: CHAINID_NETWORK_MAP[chainId],
+    });
+    // Get a quote for amount to receive from the bridge
+    estimate = await SYNAPSE_BRIDGE.estimateBridgeTokenOutput({
+      tokenFrom: fromTokenType, // token to send from the source chain, in this case USDT on Avalanche
+      chainIdTo: Object.keys(toNetwork), // Chain ID of the destination chain, in this case BSC
+      tokenTo: toTokenType, // Token to be received on the destination chain, in this case USDC
+      amountFrom: parseUnits(JSON.stringify(fromValue), BigNumber.from(fromTokenType.decimals(chainId))),
+    });
+    try {
+      // Create a populated transaction for bridging
+      populatedBridgeTokenTxn = await SYNAPSE_BRIDGE.buildBridgeTokenTransaction({
+        tokenFrom: fromTokenType, // token to send from the source chain, in this case nUSD on Avalanche
+        chainIdTo: Object.keys(toNetwork), // Chain ID of the destination chain, in this case BSC
+        tokenTo: toTokenType, // Token to be received on the destination chain, in this case USDC
+        amountFrom: parseUnits(JSON.stringify(fromValue), BigNumber.from(fromTokenType.decimals(chainId))), // Amount of `tokenFrom` being sent
+        amountTo: estimate.amountToReceive, // minimum desired amount of `tokenTo` to receive on the destination chain
+        //need to get the address
+        addressTo: address, // the address to receive the tokens on the destination chain
+      });
+    } catch (e) {
+      // handle error if one occurs
+    }
+    // Sign and send the transaction
+    //make sure im getting the signer correctly
+    await signer.sendTransaction(populatedBridgeTokenTxn);
   };
 
-//End Synapse Bridge Logic
-
-
+  //End Synapse Bridge Logic
 
   console.log(fromToken);
 
@@ -400,12 +407,16 @@ export default function Bridge(props) {
 
           <Styles.InfoRow>
             <Styles.Subtitle className="grey">Transaction Fee on Ethereum</Styles.Subtitle>
-            <Styles.Subtitle>{transactionFee} {fromTokenType.symbol}</Styles.Subtitle>
+            <Styles.Subtitle>
+              {transactionFee} {fromTokenType.symbol}
+            </Styles.Subtitle>
           </Styles.InfoRow>
 
           <Styles.InfoRow>
             <Styles.Subtitle className="grey">Gas Recieved</Styles.Subtitle>
-            <Styles.Subtitle>{ChainGasAirdrop[Object.keys(toNetwork)[0]]} {ChainGasAirdropToken[Object.keys(toNetwork)[0]]}</Styles.Subtitle>
+            <Styles.Subtitle>
+              {ChainGasAirdrop[Object.keys(toNetwork)[0]]} {ChainGasAirdropToken[Object.keys(toNetwork)[0]]}
+            </Styles.Subtitle>
           </Styles.InfoRow>
 
           <Styles.InfoRow>
