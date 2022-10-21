@@ -15,6 +15,7 @@ import {
   getTokenInfo,
   bigNumberify,
   formatAmount,
+  switchNetwork,
 } from "../../Helpers";
 import TokenSelector from "../../components/Exchange/TokenSelector";
 import { getTokens, getToken, getWhitelistedTokens, getTokenBySymbol, TOKENS } from "../../data/Tokens";
@@ -97,12 +98,12 @@ export default function Bridge(props) {
 
   const onSelectFromToken = (token) => {
     setFromTokenAddress(token.address);
-    setFromTokenType(Tokens.AllTokens.filter((tok) => tok.addresses == token.address)[0]);
+    setFromTokenType(Tokens.AllTokens.filter((tok) => tok.symbol == token.symbol)[0]);
   };
 
   const onSelectToToken = (token) => {
     setToTokenAddress(token.address);
-    setToTokenType(Tokens.AllTokens.filter((tok) => tok.addresses == token.address)[0]);
+    setFromTokenType(Tokens.AllTokens.filter((tok) => tok.symbol == token.symbol)[0]);
   };
 
   // const whitelistedTokens = getWhitelistedTokens(chainId);
@@ -231,12 +232,12 @@ export default function Bridge(props) {
     //make sure chains are setup correctly
     if (chainId != fromNetwork) {
       if (chainId == 1) {
-        //change network to 42161
+        switchNetwork(42161, active);
         setFromNetwork(1);
         setToNetwork(42161);
       }
       if (chainId == 42161) {
-        //change network to 42161
+        switchNetwork(1, active);
         setFromNetwork(42161);
         setToNetwork(1);
       }
@@ -259,8 +260,6 @@ export default function Bridge(props) {
     } else {
       setToValue(0);
       setTransactionFee("");
-      //need to create state variables for the below
-      //set gas & gas token
     }
   }, [fromToken, toToken, fromTokenType, toTokenType, fromAmount, fromNetwork, toNetwork]);
 
