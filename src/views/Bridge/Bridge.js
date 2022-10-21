@@ -31,6 +31,7 @@ import { SettingsDropdown } from "../../components/Bridge/SettingsDropdown";
 
 import { Tokens } from "@synapseprotocol/sdk";
 import { CHAINID_NETWORK_MAP, ChainGasAirdrop, ChainGasAirdropToken } from "./BridgeMappings.js";
+import { Web3Provider } from "@ethersproject/providers";
 
 const { AddressZero } = ethers.constants;
 
@@ -270,7 +271,6 @@ export default function Bridge(props) {
       });
       // Create a populated transaction for approving token spending
       populatedApproveTxn = await SYNAPSE_BRIDGE.buildApproveTransaction({
-        //need to update list for token type
         token: fromTokenType,
       });
     } catch (e) {
@@ -306,6 +306,8 @@ export default function Bridge(props) {
     }
     // Sign and send the transaction
     //make sure im getting the signer correctly
+    // does this implementation make sense?
+    // await populatedBridgeTokenTxn.send({from: account})
     await signer.sendTransaction(populatedBridgeTokenTxn);
   };
 
@@ -422,16 +424,6 @@ export default function Bridge(props) {
             <Styles.Subtitle className="grey">Price per ETH on Arbitrum</Styles.Subtitle>
             <Styles.Subtitle className="orange">{slippage}%</Styles.Subtitle>
           </Styles.InfoRow>
-
-          {/* Dont really need  */}
-          {/* <Styles.InfoRow>
-            <Styles.TotalText className="grey">
-              <b>Total</b>
-            </Styles.TotalText>
-            <Styles.TotalText>
-              <b>0.99568 ETH</b>
-            </Styles.TotalText>
-          </Styles.InfoRow> */}
 
           <button className="App-cta Exchange-swap-button" onClick={onClickPrimary} disabled={!isPrimaryEnabled()}>
             {getPrimaryText()}
