@@ -49,6 +49,7 @@ import {
   getNextToAmount,
   adjustForDecimals,
 } from "../../Helpers";
+import LimitDisabledTooltip from "../../components/Tooltip/LimitDisabled";
 
 import "./PositionSeller.css";
 import { getConstant } from "../../Constants";
@@ -61,7 +62,6 @@ import Modal from "../Modal/Modal";
 import ExchangeInfoRow from "./ExchangeInfoRow";
 import Tooltip from "../Tooltip/Tooltip";
 import TooltipRow from "../Tooltip/TooltipRow";
-import ComingSoonTooltip from "../Tooltip/ComingSoon";
 import { getTokens } from "../../data/Tokens";
 import TokenSelector from "./TokenSelector";
 import { getTokenAmountFromUsd, getUsd } from "../../utils/tokens";
@@ -129,6 +129,8 @@ function getSwapLimits(infoTokens, fromTokenAddress, toTokenAddress) {
   };
 }
 
+const orderOptions = [MARKET, <LimitDisabledTooltip handle={STOP} position="right-bottom" />];
+
 export default function PositionSeller(props) {
   const {
     active,
@@ -190,7 +192,6 @@ export default function PositionSeller(props) {
     fetcher: fetcher(library, PositionRouter),
   });
 
-  const orderOptions = [MARKET, <ComingSoonTooltip position="right-bottom" handle={orderOptionLabels[STOP]} />];
 
   let [orderOption, setOrderOption] = useState(MARKET);
 
