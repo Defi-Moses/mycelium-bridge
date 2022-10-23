@@ -18,8 +18,6 @@ import { getContract } from "../Addresses";
 import { getConstant } from "../Constants";
 import {
   ARBITRUM,
-  AVALANCHE,
-  ARBITRUM_TESTNET,
   ETHEREUM,
   bigNumberify,
   getExplorerUrl,
@@ -38,11 +36,12 @@ import {
   MM_FEE_MULTIPLIER,
   FEE_MULTIPLIER_BASIS_POINTS,
   BASIS_POINTS_DIVISOR,
+  USD_DECIMALS,
+  ETH_DECIMALS,
   MM_SWAPS_FEE_MULTIPLIER,
   FORTNIGHTS_IN_YEAR,
-  ETH_DECIMALS,
-  limitDecimals,
-  USD_DECIMALS,
+  useLocalStorageSerializeKey,
+  ARBITRUM_GOERLI,
 } from "../Helpers";
 import { getTokens, getTokenBySymbol, getWhitelistedTokens } from "../data/Tokens";
 
@@ -55,7 +54,7 @@ const { AddressZero } = ethers.constants;
 function getMycGraphClient(chainId) {
   if (chainId === ARBITRUM) {
     return arbitrumGraphClient;
-  } else if (chainId === ARBITRUM_TESTNET) {
+  } else if (chainId === ARBITRUM_GOERLI) {
     return arbitrumTestnetGraphClient;
   }
   throw new Error(`Unsupported chain ${chainId}`);
@@ -175,6 +174,61 @@ export function useMarketMakingFeesSince(chainId, from, to, stableTokens) {
   }, [setRes, query, chainId, from]);
 
   return res;
+}
+
+export function useUserSpreadCapture(chainId, account, mlpBalance, ethPrice) {
+  const [spreadCapturePerToken, setSpreadCapturePerToken] = useState();
+
+  const [hasRecentlyClaimed, setHasRecentlyClaimed] = useLocalStorageSerializeKey(
+    [chainId, "Recently-claimed-spread-capture"],
+    true
+  );
+
+  // if claimed in the last 5 minutes then zero out rewards
+  const shouldZeroSpreadCapture = useMemo(
+    () => Number(hasRecentlyClaimed) + 60 * 5 * 1000 > Date.now(),
+    [hasRecentlyClaimed]
+  );
+
+  useEffect(() => {
+    const query = gql(`{
+      spreadCapture(id: "total") {
+        cumulativeRewardsPerToken
+      },
+      userSpreadCapture(id: "${account?.toLowerCase() ?? ""}") {
+        id
+        lastCumulativeRewardsPerToken
+      }
+    }`);
+
+    getMycGraphClient(chainId)
+      .query({ query })
+      .then((res) => {
+        if (res.data.spreadCapture && res.data.userSpreadCapture) {
+          let cumulativeRewardsPerToken = bigNumberify(res.data.spreadCapture.cumulativeRewardsPerToken);
+          let lastCumulativeRewardsPerToken = bigNumberify(res.data.userSpreadCapture.lastCumulativeRewardsPerToken);
+          setSpreadCapturePerToken(cumulativeRewardsPerToken.sub(lastCumulativeRewardsPerToken));
+        }
+      })
+      .catch(console.warn);
+  }, [chainId, account]);
+
+  let userSpreadCapture, userSpreadCaptureEth;
+  if (spreadCapturePerToken && mlpBalance && ethPrice) {
+    if (shouldZeroSpreadCapture) {
+      userSpreadCapture = ethers.BigNumber.from(0);
+      userSpreadCaptureEth = ethers.BigNumber.from(0);
+    } else {
+      userSpreadCapture = spreadCapturePerToken.mul(mlpBalance).div(expandDecimals(1, 18));
+      userSpreadCaptureEth = userSpreadCapture.mul(expandDecimals(1, 18)).div(ethPrice);
+    }
+  }
+
+  return {
+    userSpreadCapture,
+    userSpreadCaptureEth,
+    setHasRecentlyClaimed,
+  };
 }
 
 export const useMarketMakingApr = (chainId, mlpSupplyUsd) => {
@@ -511,13 +565,25 @@ export function useTrades(chainId, account) {
   // Convert the response to match expected format
   let trades = [];
   if (Array.isArray(data)) {
-    trades = data.map((datum) => ({
-      id: datum.dataValues.id.toString(),
-      data: {
-        ...datum.dataValues,
-        params: JSON.stringify(datum.dataValues.params),
-      },
-    }));
+    trades = data.map((datum) => {
+      if (datum.dataValues) {
+        return {
+          id: datum.dataValues.id.toString(),
+          data: {
+            ...datum.dataValues,
+            params: JSON.stringify(datum.dataValues.params),
+          },
+        };
+      } else {
+        return {
+          id: datum.id,
+          data: {
+            ...datum,
+            params: JSON.stringify(datum.params),
+          },
+        };
+      }
+    });
   }
 
   if (trades) {
@@ -561,40 +627,6 @@ export function useTrades(chainId, account) {
   }
 
   return { trades, updateTrades };
-}
-
-export function useStakedMycSupply(library, active) {
-  const mycAddressArb = getContract(ARBITRUM, "MYC");
-  const stakedMycTrackerAddressArb = getContract(ARBITRUM, "StakedMycTracker");
-
-  const { data: arbData, mutate: arbMutate } = useSWR(
-    [`StakeV2:stakedMycSupply:${active}`, ARBITRUM, mycAddressArb, "balanceOf", stakedMycTrackerAddressArb],
-    {
-      fetcher: fetcher(library, Token),
-    }
-  );
-
-  const mycAddressAvax = getContract(AVALANCHE, "MYC");
-  const stakedMycTrackerAddressAvax = getContract(AVALANCHE, "StakedMycTracker");
-
-  const { data: avaxData, mutate: avaxMutate } = useSWR(
-    [`StakeV2:stakedMycSupply:${active}`, AVALANCHE, mycAddressAvax, "balanceOf", stakedMycTrackerAddressAvax],
-    {
-      fetcher: fetcher(undefined, Token),
-    }
-  );
-
-  let data;
-  if (arbData && avaxData) {
-    data = arbData.add(avaxData);
-  }
-
-  const mutate = () => {
-    arbMutate();
-    avaxMutate();
-  };
-
-  return { data, mutate };
 }
 
 export function useHasOutdatedUi() {
@@ -641,53 +673,6 @@ export function useTotalMYCSupply() {
   return {
     total: mycSupply ? bigNumberify(ethers.utils.parseUnits(mycSupply, 18)) : undefined,
     circulating: circulatingMycSupply ? bigNumberify(ethers.utils.parseUnits(circulatingMycSupply, 18)) : undefined,
-    mutate,
-  };
-}
-
-export function useTotalMycStaked() {
-  const stakedMycTrackerAddressArbitrum = getContract(ARBITRUM, "StakedMycTracker");
-  const stakedMycTrackerAddressAvax = getContract(AVALANCHE, "StakedMycTracker");
-  let totalStakedMyc = useRef(bigNumberify(0));
-  const { data: stakedMycSupplyArbitrum, mutate: updateStakedMycSupplyArbitrum } = useSWR(
-    [
-      `StakeV2:stakedMycSupply:${ARBITRUM}`,
-      ARBITRUM,
-      getContract(ARBITRUM, "MYC"),
-      "balanceOf",
-      stakedMycTrackerAddressArbitrum,
-    ],
-    {
-      fetcher: fetcher(undefined, Token),
-    }
-  );
-  const { data: stakedMycSupplyAvax, mutate: updateStakedMycSupplyAvax } = useSWR(
-    [
-      `StakeV2:stakedMycSupply:${AVALANCHE}`,
-      AVALANCHE,
-      getContract(AVALANCHE, "MYC"),
-      "balanceOf",
-      stakedMycTrackerAddressAvax,
-    ],
-    {
-      fetcher: fetcher(undefined, Token),
-    }
-  );
-
-  const mutate = useCallback(() => {
-    updateStakedMycSupplyArbitrum();
-    updateStakedMycSupplyAvax();
-  }, [updateStakedMycSupplyArbitrum, updateStakedMycSupplyAvax]);
-
-  if (stakedMycSupplyArbitrum && stakedMycSupplyAvax) {
-    let total = bigNumberify(stakedMycSupplyArbitrum).add(stakedMycSupplyAvax);
-    totalStakedMyc.current = total;
-  }
-
-  return {
-    avax: stakedMycSupplyAvax,
-    arbitrum: stakedMycSupplyArbitrum,
-    total: totalStakedMyc.current,
     mutate,
   };
 }
@@ -1227,6 +1212,83 @@ function ToastifyDebug(props) {
 export function useStakingApr(mycPrice, ethPrice) {
   const [stakingApr, setStakingApr] = useState(null);
 
+  const { data: currentCycle } = useSWR(
+    [`useStakingApr:currentCycle:${ARBITRUM}`, ARBITRUM, getContract(ARBITRUM, "LentMYC"), "cycle"],
+    {
+      fetcher: fetcher(undefined, LentMyc),
+    }
+  );
+
+  const cycle = currentCycle?.toNumber();
+
+  const { data: mycAssetsInStaking } = useSWR(
+    cycle
+      ? [`useStakingApr:mycInStaking:${ARBITRUM}`, ARBITRUM, getContract(ARBITRUM, "LentMYC"), "totalAssets"]
+      : null,
+    {
+      fetcher: fetcher(undefined, LentMyc),
+    }
+  );
+
+  const { data: pendingMycDepositsInStaking } = useSWR(
+    cycle
+      ? [`useStakingApr:pendingMycInStaking:${ARBITRUM}`, ARBITRUM, getContract(ARBITRUM, "LentMYC"), "pendingDeposits"]
+      : null,
+    {
+      fetcher: fetcher(undefined, LentMyc),
+    }
+  );
+
+  const { data: prev } = useSWR(
+    cycle
+      ? [`useStakingApr:prev:${ARBITRUM}`, ARBITRUM, getContract(ARBITRUM, "LentMYC"), "cycleCumulativeEthRewards"]
+      : null,
+    {
+      fetcher: fetcher(undefined, LentMyc, [cycle - 2]),
+    }
+  );
+
+  const { data: current } = useSWR(
+    cycle
+      ? [`useStakingApr:current:${ARBITRUM}`, ARBITRUM, getContract(ARBITRUM, "LentMYC"), "cycleCumulativeEthRewards"]
+      : null,
+    {
+      fetcher: fetcher(undefined, LentMyc, [cycle - 1]),
+    }
+  );
+
+  const { data: cycleAssets } = useSWR(
+    cycle
+      ? [`useStakingApr:cycleAssets:${ARBITRUM}`, ARBITRUM, getContract(ARBITRUM, "LentMYC"), "cycleSharesAndAssets"]
+      : null,
+    {
+      fetcher: fetcher(undefined, LentMyc, [cycle - 1]),
+    }
+  );
+
+  useEffect(() => {
+    const values = [mycAssetsInStaking, pendingMycDepositsInStaking, ethPrice, mycPrice, current, prev, cycleAssets];
+    if (values.every(Boolean)) {
+      const cycleEthRewardsPerShare = current.sub(prev);
+      const cycleSupply = cycleAssets[0];
+      const cycleEthRewards = cycleEthRewardsPerShare.mul(cycleSupply).div(ethers.BigNumber.from(10).pow(18));
+      const ethDistributed = cycleEthRewards;
+      const mycDeposited = mycAssetsInStaking.add(pendingMycDepositsInStaking).div(expandDecimals(1, ETH_DECIMALS));
+      const mycUSDValue = mycDeposited.mul(mycPrice);
+      const ethUSDValue = ethDistributed.mul(ethPrice);
+
+      const aprPercentageForCycle = ethers.utils.formatUnits(ethUSDValue.div(mycUSDValue));
+      const aprPercentageYearly = parseFloat(aprPercentageForCycle) * FORTNIGHTS_IN_YEAR * 100;
+      setStakingApr(aprPercentageYearly.toFixed(2));
+    }
+  }, [mycAssetsInStaking, pendingMycDepositsInStaking, ethPrice, mycPrice, current, prev, cycleAssets]);
+
+  return stakingApr;
+}
+
+export function useTotalStaked() {
+  const [totalStakedMyc, setTotalStakedMyc] = useState(null);
+
   const { data: mycAssetsInStaking } = useSWR(
     [`DashboardV2:mycInStaking:${ARBITRUM}`, ARBITRUM, getContract(ARBITRUM, "LentMYC"), "totalAssets"],
     {
@@ -1242,21 +1304,16 @@ export function useStakingApr(mycPrice, ethPrice) {
   );
 
   useEffect(() => {
-    if (mycAssetsInStaking && pendingMycDepositsInStaking && ethPrice && mycPrice) {
-      // Format prices
+    if (mycAssetsInStaking && pendingMycDepositsInStaking && !totalStakedMyc) {
       const mycDeposited = mycAssetsInStaking.add(pendingMycDepositsInStaking).div(expandDecimals(1, ETH_DECIMALS));
 
-      let ethDistributed = ethers.utils.parseEther("34.5807416");
-      let mycUSDValue = mycDeposited.mul(mycPrice);
-      let ethUSDValue = ethDistributed.mul(ethPrice);
-
-      const aprPercentageForCycle = ethers.utils.formatUnits(ethUSDValue.div(mycUSDValue));
-      const aprPercentageYearly = parseFloat(aprPercentageForCycle) * FORTNIGHTS_IN_YEAR * 100;
-      setStakingApr(aprPercentageYearly.toFixed(2));
+      if (!totalStakedMyc) {
+        setTotalStakedMyc(mycDeposited);
+      }
     }
-  }, [mycAssetsInStaking, pendingMycDepositsInStaking, ethPrice, mycPrice]);
+  }, [mycAssetsInStaking, pendingMycDepositsInStaking, totalStakedMyc]);
 
-  return stakingApr;
+  return totalStakedMyc;
 }
 
 export async function callContract(chainId, contract, method, params, opts) {
@@ -1296,6 +1353,7 @@ export async function callContract(chainId, contract, method, params, opts) {
         hash: res.hash,
         message: opts.successMsg || "Transaction completed!",
       };
+
       opts.setPendingTxns((pendingTxns) => [...pendingTxns, pendingTxn]);
     }
     return res;
@@ -1334,4 +1392,133 @@ export async function callContract(chainId, contract, method, params, opts) {
     helperToast.error(failMsg);
     throw e;
   }
+}
+
+export function useMlpPrices(chainId, currentMlpPrice) {
+  const query = gql(`{
+    mlpStats(
+      first: 1000,
+      orderBy: id,
+      orderDirection: asc,
+      where: { period: daily }
+    ) {
+      id
+      aumInUsdg
+      mlpSupply
+      distributedUsd
+      distributedEth
+    },
+    feeStats (
+      first: 1000,
+      orderBy: id,
+      orderDirection: asc,
+      where: { period: daily }
+    ) {
+      id
+      margin
+      marginAndLiquidation
+      swap
+      liquidation
+      mint
+      burn
+    }
+  }`);
+
+  const [data, setData] = useState();
+
+  useEffect(() => {
+    getMycGraphClient(chainId).query({ query }).then(setData).catch(console.warn);
+  }, [setData, query, chainId]);
+
+  let cumulativeDistributedUsdPerMlp = 0;
+  let cumulativeDistributedEthPerMlp = 0;
+  const mlpChartData = useMemo(() => {
+    if (!data) {
+      return null;
+    }
+
+    let prevMlpSupply;
+    let prevAum;
+
+    const feeStatsById = data.data.feeStats.reduce(
+      (o, stat) => ({
+        ...o,
+        [stat.id]: ethers.BigNumber.from(stat.marginAndLiquidation).add(stat.swap).add(stat.mint).add(stat.burn),
+      }),
+      {}
+    );
+
+    let cumulativeFees = ethers.BigNumber.from(0);
+    let ret = data.data.mlpStats
+      .filter((item) => item.id % 86400 === 0)
+      .reduce((memo, item, i) => {
+        const last = memo[memo.length - 1];
+
+        const aum = Number(item.aumInUsdg) / 1e18;
+        const mlpSupply = Number(item.mlpSupply) / 1e18;
+
+        const distributedUsd = Number(item.distributedUsd) / 1e30;
+        const distributedUsdPerMlp = distributedUsd / mlpSupply || 0;
+        cumulativeDistributedUsdPerMlp += distributedUsdPerMlp;
+
+        const distributedEth = Number(item.distributedEth) / 1e18;
+        const distributedEthPerMlp = distributedEth / mlpSupply || 0;
+        cumulativeDistributedEthPerMlp += distributedEthPerMlp;
+
+        const feeStat = feeStatsById[item.id] ?? ethers.BigNumber.from(0);
+        cumulativeFees = cumulativeFees.add(feeStat);
+        const totalFees = parseFloat(ethers.utils.formatUnits(cumulativeFees, USD_DECIMALS));
+
+        const mlpPrice = aum / mlpSupply;
+        const mlpPriceWithFees = (totalFees + aum) / mlpSupply;
+
+        const timestamp = parseInt(item.id);
+
+        const newItem = {
+          time: timestamp,
+          aum,
+          mlpSupply,
+          value: mlpPrice,
+          mlpPriceWithFees: mlpPriceWithFees,
+          cumulativeDistributedEthPerMlp,
+          cumulativeDistributedUsdPerMlp,
+          distributedUsdPerMlp,
+          distributedEthPerMlp,
+        };
+        if (i === data.data.mlpStats.length - 1 && currentMlpPrice) {
+          newItem.mlpPriceWithFees = Number.isNaN(mlpPrice)
+            ? parseFloat(ethers.utils.formatUnits(currentMlpPrice, USD_DECIMALS))
+            : mlpPriceWithFees;
+          newItem.value = parseFloat(ethers.utils.formatUnits(currentMlpPrice, USD_DECIMALS));
+        }
+
+        if (last && last.timestamp === timestamp) {
+          memo[memo.length - 1] = newItem;
+        } else {
+          memo.push(newItem);
+        }
+        return memo;
+      }, [])
+      .map((item) => {
+        let { mlpSupply, aum } = item;
+        if (!mlpSupply) {
+          mlpSupply = prevMlpSupply;
+        }
+        if (!aum) {
+          aum = prevAum;
+        }
+        item.mlpSupplyChange = prevMlpSupply ? ((mlpSupply - prevMlpSupply) / prevMlpSupply) * 100 : 0;
+        if (item.mlpSupplyChange > 1000) item.mlpSupplyChange = 0;
+        item.aumChange = prevAum ? ((aum - prevAum) / prevAum) * 100 : 0;
+        if (item.aumChange > 1000) item.aumChange = 0;
+        prevMlpSupply = mlpSupply;
+        prevAum = aum;
+        return item;
+      });
+
+    // ret = fillNa(ret);
+    return ret;
+  }, [data, currentMlpPrice]);
+
+  return mlpChartData;
 }

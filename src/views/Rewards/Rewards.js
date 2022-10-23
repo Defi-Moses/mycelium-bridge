@@ -28,6 +28,7 @@ import FeeDistributor from "../../abis/FeeDistributor.json";
 import FeeDistributorReader from "../../abis/FeeDistributorReader.json";
 import ViewSwitch from "../../components/ViewSwitch/ViewSwitch";
 import { RoundDropdown } from "../../components/RewardsRoundSelect/RewardsRoundSelect";
+import FeeUpdateModal from "../../components/Modal/FeeUpdateModal";
 
 const PersonalHeader = () => (
   <div className="Page-title-section mt-0">
@@ -64,17 +65,20 @@ export default function Rewards(props) {
   const [pageTracked, setPageTracked] = useState(false);
   const [isClaiming, setIsClaiming] = useState(false);
   const [nextRewards, setNextRewards] = useState();
+  const [claimDelay, setClaimDelay] = useState();
 
   const feeDistributor = getContract(chainId, "FeeDistributor");
   const feeDistributorReader = getContract(chainId, "FeeDistributorReader");
 
   // Fetch all round data from server
-  const { data: allRoundsRewardsData, error: failedFetchingRewards } = useSWR(
+  const { data: allRoundsRewardsData_, error: failedFetchingRewards } = useSWR(
     [getTracerServerUrl(chainId, "/tradingRewards")],
     {
       fetcher: (...args) => fetch(...args).then((res) => res.json()),
     }
   );
+
+  const allRoundsRewardsData = Array.isArray(allRoundsRewardsData_) ? allRoundsRewardsData_ : undefined;
 
   // Fetch only the latest round's data from server
   const { data: currentRewardRound, error: failedFetchingRoundRewards } = useSWR(
@@ -241,6 +245,16 @@ export default function Rewards(props) {
   };
 
   useEffect(() => {
+    const now = Date.now();
+    const buffer = 60 * 60 * 2 * 1000; // 2 hours
+    if (currentRewardRound && Number(currentRewardRound.end) + buffer > now) {
+      setClaimDelay(true);
+    } else {
+      setClaimDelay(false);
+    }
+  }, [currentRewardRound]);
+
+  useEffect(() => {
     if (!!allRoundsRewardsData) {
       const ends = allRoundsRewardsData.map((round) => Number(round.end));
       const max = Math.max(...ends);
@@ -286,7 +300,7 @@ export default function Rewards(props) {
     }
     if (error) {
       setIsClaiming(true);
-      return
+      return;
     }
     const contract = new ethers.Contract(feeDistributor, FeeDistributor.abi, library.getSigner());
     callContract(
@@ -354,6 +368,7 @@ export default function Rewards(props) {
           nextRewards={nextRewards}
           latestRound={isLatestRound}
           handleClaim={handleClaim}
+          claimDelay={claimDelay}
           isClaiming={isClaiming}
           hasClaimed={hasClaimedRound}
         />
@@ -368,6 +383,7 @@ export default function Rewards(props) {
           connectWallet={connectWallet}
           trackAction={trackAction}
           handleClaim={handleClaim}
+          claimDelay={claimDelay}
           latestRound={isLatestRound}
           isClaiming={isClaiming}
           hasClaimed={hasClaimedRound}
