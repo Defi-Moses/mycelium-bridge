@@ -3,7 +3,6 @@ import React, { useState, useEffect, useMemo, useCallback } from "react";
 import Tooltip from "../Tooltip/Tooltip";
 import Modal from "../Modal/Modal";
 
-import cx from "classnames";
 import useSWR from "swr";
 import { ethers } from "ethers";
 
@@ -14,8 +13,6 @@ import {
   helperToast,
   formatAmount,
   bigNumberify,
-  ARBITRUM,
-  AVALANCHE,
   USD_DECIMALS,
   USDG_DECIMALS,
   LONG,
@@ -57,12 +54,10 @@ import {
   calculatePositionDelta,
   replaceNativeTokenAddress,
   adjustForDecimals,
-  REFERRAL_CODE_KEY,
   isHashZero,
   NETWORK_NAME,
   getSpread,
   getUserTokenBalances,
-  preventStrangeNumberInputs
 } from "../../Helpers";
 import { getConstant } from "../../Constants";
 import * as Api from "../../Api";
@@ -85,6 +80,7 @@ import shortImg from "../../img/short.svg";
 import swapImg from "../../img/swap.svg";
 import { useUserReferralCode } from "../../Api/referrals";
 import { LeverageInput } from "./LeverageInput";
+import { REFERRAL_CODE_KEY } from "../../config/localstorage";
 
 const SWAP_ICONS = {
   [LONG]: longImg,
@@ -194,7 +190,6 @@ export default function SwapBox(props) {
         return "";
     }
   }
-
   const [leverageOption, setLeverageOption] = useLocalStorageSerializeKey(
     [chainId, "Exchange-swap-leverage-option"],
     "2"
@@ -211,7 +206,7 @@ export default function SwapBox(props) {
 
   const onOrderOptionChange = (option) => {
     // limits disabled
-    if (typeof option === "string" && option !== LIMIT) {
+    if (typeof option === "string") {
       setOrderOption(option);
     }
   };
@@ -679,7 +674,7 @@ export default function SwapBox(props) {
 
   const getSwapError = () => {
     const gasTokenInfo = getTokenInfo(infoTokens, ethers.constants.AddressZero);
-    if (gasTokenInfo.balance?.eq(0)){
+    if (gasTokenInfo.balance?.eq(0)) {
       return ["Not enough ETH for gas"];
     }
 
@@ -769,7 +764,7 @@ export default function SwapBox(props) {
 
   const getLeverageError = useCallback(() => {
     const gasTokenInfo = getTokenInfo(infoTokens, ethers.constants.AddressZero);
-    if (gasTokenInfo.balance?.eq(0)){
+    if (gasTokenInfo.balance?.eq(0)) {
       return ["Not enough ETH for gas"];
     }
     if (hasOutdatedUi) {
@@ -1542,6 +1537,11 @@ export default function SwapBox(props) {
       }
     }
 
+    // Limits not enabled for swaps yet
+    if (opt === SWAP && orderOption === LIMIT) {
+      setOrderOption(MARKET);
+    }
+
     trackAction &&
       trackAction("Swap option changed", {
         option: opt,
@@ -1691,16 +1691,6 @@ export default function SwapBox(props) {
     feeBps = feeBasisPoints;
   }
 
-  const leverageMarks = {
-    2: "2x",
-    5: "5x",
-    10: "10x",
-    15: "15x",
-    20: "20x",
-    25: "25x",
-    30: "30x",
-  };
-
   if (!fromToken || !toToken) {
     return null;
   }
@@ -1843,6 +1833,12 @@ export default function SwapBox(props) {
     }
   };
 
+  const preventStrangeNumberInputs = (e) => {
+    if (["e", "E", "+", "-"].includes(e.key)) {
+      e.preventDefault();
+    }
+  };
+
   return (
     <div className="Exchange-swap-box">
       {/* <div className="Exchange-swap-wallet-box App-box">
@@ -1865,6 +1861,7 @@ export default function SwapBox(props) {
               type="inline"
               option={orderOption}
               onChange={onOrderOptionChange}
+              newItem={LIMIT}
             />
           )}
         </div>
