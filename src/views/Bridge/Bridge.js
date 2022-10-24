@@ -1,5 +1,5 @@
-import React, { useState } from "react";
-import { ethers, BigNumber } from "ethers";
+import React, { useState, useEffect } from "react";
+import { ethers, BigNumber, parseUnits } from "ethers";
 import { useWeb3React } from "@web3-react/core";
 import useSWR from "swr";
 import { IoMdSwap } from "react-icons/io";
@@ -18,33 +18,25 @@ import {
   switchNetwork,
 } from "../../Helpers";
 import TokenSelector from "../../components/Exchange/TokenSelector";
-import { getTokens, getToken, getWhitelistedTokens, getTokenBySymbol, TOKENS } from "../../data/Tokens";
+import { getToken, getTokenBySymbol, TOKENS } from "../../data/Tokens";
 import { getConstant } from "../../Constants";
 import Token from "../../abis/Token.json";
 import * as Styles from "./Bridge.styles";
 import { getContract } from "../../Addresses";
 import settingsIcon from "../../img/settings.svg";
-import arbitrumIcon from "../../img/arbitrum.svg";
-import ethereumIcon from "../../img/ethereum.svg";
 import chevronDownIcon from "../../img/chevron-down-white.svg";
 import { SettingsDropdown } from "../../components/Bridge/SettingsDropdown";
 
 import { Tokens } from "@synapseprotocol/sdk";
 import { CHAINID_NETWORK_MAP, ChainGasAirdrop, ChainGasAirdropToken } from "./BridgeMappings.js";
-import { Web3Provider } from "@ethersproject/providers";
-//adding for the sake of a push --test
+import { chain } from "lodash";
 
 const { AddressZero } = ethers.constants;
 
-const SUPPORTED_NETWORKS = {
-  1: { label: "Ethereum", icon: ethereumIcon },
-  42161: { label: "Arbitrum", icon: arbitrumIcon },
-};
-
 export default function Bridge(props) {
-  const { connectWallet, trackPageWithTraits, trackAction, analytics, pendingTxns, setPendingTxns, infoTokens } = props;
+  const { trackAction, pendingTxns, setPendingTxns, infoTokens } = props;
   const { chainId } = useChainId();
-  const { active, account, library } = useWeb3React();
+  const { active, account, library, provider } = useWeb3React();
 
   const defaultCollateralSymbol = getConstant(chainId, "defaultCollateralSymbol");
   const defaultTokenSelection = {
@@ -252,7 +244,6 @@ export default function Bridge(props) {
         //     Get a quote for amount to receive from the bridge
         DUMMY_BRIDGE.estimateBridgeTokenOutput({
           tokenFrom: fromTokenType, // token to send from the source chain, in this case USDT on Avalanche
-          //need to edit the below
           chainIdTo: Object.keys(toNetwork), // Chain ID of the destination chain, in this case BSC
           tokenTo: toTokenType, // Token to be received on the destination chain, in this case USDC
           amountFrom: BigNumber.from(fromValue).mul(10 ** 6),
@@ -263,7 +254,7 @@ export default function Bridge(props) {
       setToValue(0);
       setTransactionFee("");
     }
-  }, [fromToken, toToken, fromTokenType, toTokenType, fromAmount, fromNetwork, toNetwork]);
+  }, [fromToken, toToken, fromTokenType, toTokenType, fromAmount, fromNetwork, toNetwork, fromValue, chainId, active]);
 
   const onClickApprove = async () => {
     try {
@@ -278,7 +269,7 @@ export default function Bridge(props) {
       // handle error if one occurs
     }
     // Sign and send the transaction
-    signer.sendTransaction(populatedApproveTxn);
+    provider.getSigner().sendTransaction(populatedApproveTxn);
   };
   const onClickBridge = async () => {
     const SYNAPSE_BRIDGE = new Bridge.SynapseBridge({
@@ -300,16 +291,13 @@ export default function Bridge(props) {
         amountFrom: parseUnits(JSON.stringify(fromValue), BigNumber.from(fromTokenType.decimals(chainId))), // Amount of `tokenFrom` being sent
         amountTo: estimate.amountToReceive, // minimum desired amount of `tokenTo` to receive on the destination chain
         //need to get the address
-        addressTo: address, // the address to receive the tokens on the destination chain
+        addressTo: account, // the address to receive the tokens on the destination chain
       });
     } catch (e) {
       // handle error if one occurs
     }
     // Sign and send the transaction
-    //make sure im getting the signer correctly
-    // does this implementation make sense?
-    // await populatedBridgeTokenTxn.send({from: account})
-    await signer.sendTransaction(populatedBridgeTokenTxn);
+    await provider.getSigner().sendTransaction(populatedBridgeTokenTxn);
   };
 
   //End Synapse Bridge Logic
