@@ -70,7 +70,7 @@ import BuyMlp from "./views/BuyMlp/BuyMlp";
 import SellMlp from "./views/SellMlp/SellMlp";
 import Rewards from "./views/Rewards/Rewards";
 import Referrals from "./views/Referrals/Referrals";
-import Bridge from "./views/Bridge/Bridge";
+import BridgeWidget from "./views/Bridge/Bridge";
 // import NftWallet from "./views/NftWallet/NftWallet";
 // import BeginAccountTransfer from "./views/BeginAccountTransfer/BeginAccountTransfer";
 // import CompleteAccountTransfer from "./views/CompleteAccountTransfer/CompleteAccountTransfer";
@@ -956,7 +956,7 @@ function FullApp() {
               />
             </Route>
             <Route exact path="/bridge">
-              <Bridge
+              <BridgeWidget
                 connectWallet={connectWallet}
                 trackPageWithTraits={trackPageWithTraits}
                 trackAction={trackAction}

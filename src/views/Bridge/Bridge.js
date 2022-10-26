@@ -26,15 +26,14 @@ import settingsIcon from "../../img/settings.svg";
 import chevronDownIcon from "../../img/chevron-down-white.svg";
 import { SettingsDropdown } from "../../components/Bridge/SettingsDropdown";
 
-import { Tokens } from "@synapseprotocol/sdk";
+import { Bridge, Tokens } from "@synapseprotocol/sdk";
 import { CHAINID_NETWORK_MAP, ChainGasAirdrop, ChainGasAirdropToken } from "./BridgeMappings.js";
-import { chain } from "lodash";
 
 const { AddressZero } = ethers.constants;
 
 //Added such that we can run vercel
 
-export default function Bridge(props) {
+export default function BridgeWidget(props) {
   const { trackAction, pendingTxns, setPendingTxns, infoTokens } = props;
   const { chainId } = useChainId();
   const { active, account, library, provider } = useWeb3React();
