@@ -32,6 +32,8 @@ import { chain } from "lodash";
 
 const { AddressZero } = ethers.constants;
 
+//Added such that we can run vercel
+
 export default function Bridge(props) {
   const { trackAction, pendingTxns, setPendingTxns, infoTokens } = props;
   const { chainId } = useChainId();
