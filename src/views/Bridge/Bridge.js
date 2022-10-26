@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { ethers, BigNumber, parseUnits } from "ethers";
+import { ethers, BigNumber } from "ethers";
 import { useWeb3React } from "@web3-react/core";
 import useSWR from "swr";
 import { IoMdSwap } from "react-icons/io";
@@ -7,7 +7,6 @@ import SEO from "../../components/Common/SEO";
 import {
   getPageTitle,
   useChainId,
-  preventStrangeNumberInputs,
   isSupportedChain,
   fetcher,
   parseValue,
@@ -100,9 +99,6 @@ export default function Bridge(props) {
     setFromTokenType(Tokens.AllTokens.filter((tok) => tok.symbol == token.symbol)[0]);
   };
 
-  // const whitelistedTokens = getWhitelistedTokens(chainId);
-  // const toTokens = whitelistedTokens.filter((token) => !token.isStable && !token.isWrapped);
-  // const fromTokens = getTokens(chainId);
   const fromTokenInfo = getTokenInfo(infoTokens, fromTokenAddress);
   const fromBalance = fromTokenInfo ? fromTokenInfo.balance : bigNumberify(0);
 
@@ -280,7 +276,8 @@ export default function Bridge(props) {
       tokenFrom: fromTokenType, // token to send from the source chain, in this case USDT on Avalanche
       chainIdTo: Object.keys(toNetwork), // Chain ID of the destination chain, in this case BSC
       tokenTo: toTokenType, // Token to be received on the destination chain, in this case USDC
-      amountFrom: parseUnits(JSON.stringify(fromValue), BigNumber.from(fromTokenType.decimals(chainId))),
+      // amountFrom: parseUnits(JSON.stringify(fromValue), BigNumber.from(fromTokenType.decimals(chainId))),
+      amountFrom: fromValue,
     });
     try {
       // Create a populated transaction for bridging
@@ -288,7 +285,8 @@ export default function Bridge(props) {
         tokenFrom: fromTokenType, // token to send from the source chain, in this case nUSD on Avalanche
         chainIdTo: Object.keys(toNetwork), // Chain ID of the destination chain, in this case BSC
         tokenTo: toTokenType, // Token to be received on the destination chain, in this case USDC
-        amountFrom: parseUnits(JSON.stringify(fromValue), BigNumber.from(fromTokenType.decimals(chainId))), // Amount of `tokenFrom` being sent
+        // amountFrom: parseUnits(JSON.stringify(fromValue), BigNumber.from(fromTokenType.decimals(chainId))), // Amount of `tokenFrom` being sent
+        amountFrom: fromValue,
         amountTo: estimate.amountToReceive, // minimum desired amount of `tokenTo` to receive on the destination chain
         //need to get the address
         addressTo: account, // the address to receive the tokens on the destination chain
@@ -341,7 +339,6 @@ export default function Bridge(props) {
                 placeholder="0.0"
                 value={fromValue}
                 onChange={onFromValueChange}
-                onKeyDown={preventStrangeNumberInputs}
               />
               <Styles.FlexRow>
                 <Styles.MaxButton />
@@ -372,14 +369,7 @@ export default function Bridge(props) {
             </Styles.TokenButton>
             <Styles.Divider />
             <Styles.FlexRowFull>
-              <Styles.AmountInput
-                type="number"
-                min="0"
-                placeholder="0.0"
-                value={toValue}
-                onChange={onToValueChange}
-                onKeyDown={preventStrangeNumberInputs}
-              />
+              <Styles.AmountInput type="number" min="0" placeholder="0.0" value={toValue} onChange={onToValueChange} />
               <Styles.FlexRow>
                 <TokenSelector
                   label="Receive"

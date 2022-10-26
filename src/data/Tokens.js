@@ -1,7 +1,7 @@
 import { ethers } from "ethers";
 import { getContract } from "../Addresses";
 
-const TOKENS = {
+export const TOKENS = {
   421613: [
     {
       name: "Bitcoin (WBTC)",
