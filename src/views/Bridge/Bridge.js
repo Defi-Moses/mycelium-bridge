@@ -17,22 +17,25 @@ import {
   switchNetwork,
 } from "../../Helpers";
 import TokenSelector from "../../components/Exchange/TokenSelector";
-import { getToken, getTokenBySymbol, TOKENS } from "../../data/Tokens";
+import { getToken, getTokenBySymbol, getWhitelistedTokens, TOKENS } from "../../data/Tokens";
 import { getConstant } from "../../Constants";
 import Token from "../../abis/Token.json";
 import * as Styles from "./Bridge.styles";
 import { getContract } from "../../Addresses";
 import settingsIcon from "../../img/settings.svg";
+import arbitrumIcon from "../../img/arbitrum.svg";
+import ethereumIcon from "../../img/ethereum.svg";
 import chevronDownIcon from "../../img/chevron-down-white.svg";
 import { SettingsDropdown } from "../../components/Bridge/SettingsDropdown";
-
 import { Bridge, Tokens } from "@synapseprotocol/sdk";
 import { CHAINID_NETWORK_MAP, ChainGasAirdrop, ChainGasAirdropToken } from "./BridgeMappings.js";
 
 const { AddressZero } = ethers.constants;
 
-//Added such that we can run vercel
-
+const SUPPORTED_NETWORKS = {
+  1: { label: "Ethereum", icon: ethereumIcon },
+  42161: { label: "Arbitrum", icon: arbitrumIcon },
+};
 export default function BridgeWidget(props) {
   const { trackAction, pendingTxns, setPendingTxns, infoTokens } = props;
   const { chainId } = useChainId();
@@ -104,13 +107,13 @@ export default function BridgeWidget(props) {
   const fromBalance = fromTokenInfo ? fromTokenInfo.balance : bigNumberify(0);
 
   //Getting correct to and from tokens (supported by synapse)
-  const toTokens = TOKENS[toNetwork].filter(
+  const whitelistedTokens = getWhitelistedTokens(chainId);
+  const toTokens = whitelistedTokens.filter(
     (tok) => tok.symbol == "USDC" || tok.symbol == "USDT" || tok.symbol == "ETH"
   );
-  const fromTokens = TOKENS[fromNetwork].filter(
+  const fromTokens = whitelistedTokens.filter(
     (tok) => tok.symbol == "USDC" || tok.symbol == "USDT" || tok.symbol == "ETH"
   );
-
   const switchTokensAndNetwork = () => {
     const tempFromToken = fromTokenAddress;
     const tempFromNetwork = fromNetwork;
@@ -249,7 +252,7 @@ export default function BridgeWidget(props) {
       getEstimate.then((res) => setTransactionFee(res.bridgeFee / 1000000000000000000));
     } else {
       setToValue(0);
-      setTransactionFee("");
+      setTransactionFee("0");
     }
   }, [fromToken, toToken, fromTokenType, toTokenType, fromAmount, fromNetwork, toNetwork, fromValue, chainId, active]);
 
@@ -327,8 +330,12 @@ export default function BridgeWidget(props) {
           <Styles.TokenBox>
             <Styles.Label>From</Styles.Label>
             <Styles.TokenButton>
-              <img className="token-icon" src={fromNetwork.icon} alt={fromNetwork.label} />
-              <span className="token-name">{fromNetwork.label}</span>
+              <img
+                className="token-icon"
+                src={SUPPORTED_NETWORKS[fromNetwork].icon}
+                alt={SUPPORTED_NETWORKS[fromNetwork].label}
+              />
+              <span className="token-name">{SUPPORTED_NETWORKS[fromNetwork].label}</span>
               <img className="chevron-down" src={chevronDownIcon} alt="Chevron down" />
             </Styles.TokenButton>
             <Styles.Divider />
@@ -364,8 +371,12 @@ export default function BridgeWidget(props) {
           <Styles.TokenBox>
             <Styles.Label>To</Styles.Label>
             <Styles.TokenButton>
-              <img className="token-icon" src={toNetwork.icon} alt={toNetwork.label} />
-              <span className="token-name">{toNetwork.label}</span>
+              <img
+                className="token-icon"
+                src={SUPPORTED_NETWORKS[toNetwork].icon}
+                alt={SUPPORTED_NETWORKS[toNetwork].label}
+              />
+              <span className="token-name">{SUPPORTED_NETWORKS[toNetwork].label}</span>
               <img className="chevron-down" src={chevronDownIcon} alt="Chevron down" />
             </Styles.TokenButton>
             <Styles.Divider />
@@ -396,12 +407,12 @@ export default function BridgeWidget(props) {
           <Styles.InfoRow>
             <Styles.Subtitle className="grey">Gas Recieved</Styles.Subtitle>
             <Styles.Subtitle>
-              {ChainGasAirdrop[Object.keys(toNetwork)[0]]} {ChainGasAirdropToken[Object.keys(toNetwork)[0]]}
+              {ChainGasAirdrop[toNetwork]} {ChainGasAirdropToken[toNetwork]}
             </Styles.Subtitle>
           </Styles.InfoRow>
 
           <Styles.InfoRow>
-            <Styles.Subtitle className="grey">Price per ETH on Arbitrum</Styles.Subtitle>
+            <Styles.Subtitle className="grey">Price per {fromTokenType.symbol} on Arbitrum</Styles.Subtitle>
             <Styles.Subtitle className="orange">{slippage}%</Styles.Subtitle>
           </Styles.InfoRow>
 
