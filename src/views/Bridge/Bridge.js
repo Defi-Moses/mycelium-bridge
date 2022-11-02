@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { ethers, BigNumber } from "ethers";
+import { parseUnits } from "@ethersproject/units";
 import { useWeb3React } from "@web3-react/core";
 import useSWR from "swr";
 import { IoMdSwap } from "react-icons/io";
@@ -241,12 +242,12 @@ export default function BridgeWidget(props) {
     });
     if (fromValue > 0) {
       const getEstimate =
-        //     Get a quote for amount to receive from the bridge
+        // Get a quote for amount to receive from the bridge
         DUMMY_BRIDGE.estimateBridgeTokenOutput({
-          tokenFrom: fromTokenType, // token to send from the source chain, in this case USDT on Avalanche
-          chainIdTo: Object.keys(toNetwork), // Chain ID of the destination chain, in this case BSC
-          tokenTo: toTokenType, // Token to be received on the destination chain, in this case USDC
-          amountFrom: BigNumber.from(fromValue).mul(10 ** 6),
+          tokenFrom: fromTokenType, // token to send from the source chain
+          chainIdTo: toNetwork, // Chain ID of the destination chain
+          tokenTo: toTokenType, // Token to be received on the destination chain,
+          amountFrom: parseUnits(JSON.stringify(fromValue), BigNumber.from(fromTokenType.decimals(chainId))),
         });
       getEstimate.then((res) => setToValue(res.amountToReceive));
       getEstimate.then((res) => setTransactionFee(res.bridgeFee / 1000000000000000000));
@@ -277,22 +278,19 @@ export default function BridgeWidget(props) {
     });
     // Get a quote for amount to receive from the bridge
     estimate = await SYNAPSE_BRIDGE.estimateBridgeTokenOutput({
-      tokenFrom: fromTokenType, // token to send from the source chain, in this case USDT on Avalanche
-      chainIdTo: Object.keys(toNetwork), // Chain ID of the destination chain, in this case BSC
-      tokenTo: toTokenType, // Token to be received on the destination chain, in this case USDC
-      // amountFrom: parseUnits(JSON.stringify(fromValue), BigNumber.from(fromTokenType.decimals(chainId))),
-      amountFrom: fromValue,
+      tokenFrom: fromTokenType, // token to send from the source chain
+      chainIdTo: toNetwork, // Chain ID of the destination chain
+      tokenTo: toTokenType, // Token to be received on the destination chain
+      amountFrom: parseUnits(JSON.stringify(fromValue), BigNumber.from(fromTokenType.decimals(chainId))),
     });
     try {
       // Create a populated transaction for bridging
       populatedBridgeTokenTxn = await SYNAPSE_BRIDGE.buildBridgeTokenTransaction({
-        tokenFrom: fromTokenType, // token to send from the source chain, in this case nUSD on Avalanche
-        chainIdTo: Object.keys(toNetwork), // Chain ID of the destination chain, in this case BSC
-        tokenTo: toTokenType, // Token to be received on the destination chain, in this case USDC
-        // amountFrom: parseUnits(JSON.stringify(fromValue), BigNumber.from(fromTokenType.decimals(chainId))), // Amount of `tokenFrom` being sent
-        amountFrom: fromValue,
+        tokenFrom: fromTokenType, // token to send from the source chain
+        chainIdTo: toNetwork, // Chain ID of the destination chain
+        tokenTo: toTokenType, // Token to be received on the destination chain
+        amountFrom: parseUnits(JSON.stringify(fromValue), BigNumber.from(fromTokenType.decimals(chainId))),
         amountTo: estimate.amountToReceive, // minimum desired amount of `tokenTo` to receive on the destination chain
-        //need to get the address
         addressTo: account, // the address to receive the tokens on the destination chain
       });
     } catch (e) {
@@ -303,8 +301,6 @@ export default function BridgeWidget(props) {
   };
 
   //End Synapse Bridge Logic
-
-  console.log(fromToken);
 
   return (
     <>
