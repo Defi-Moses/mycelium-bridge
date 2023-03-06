@@ -1,4 +1,4 @@
-import * as Styled from './Tooltip.styles';
+import * as Styled from "./Tooltip.styles";
 
 export default function TooltipRow({ label, value, showDollar = true }) {
   const valueIsArray = Array.isArray(value);
@@ -6,17 +6,18 @@ export default function TooltipRow({ label, value, showDollar = true }) {
   return (
     <Styled.TooltipRow>
       <span className="label">{label}:</span>
-      {valueIsArray ?
+      {valueIsArray ? (
         <Styled.TooltipRowValues>
           {value.map((v, i) => (
             <li key={i}>{v}</li>
           ))}
         </Styled.TooltipRowValues>
-        : <Styled.TooltipRowValue>
+      ) : (
+        <Styled.TooltipRowValue>
           {showDollar && "$"}
           {value}
         </Styled.TooltipRowValue>
-      }
+      )}
     </Styled.TooltipRow>
   );
 }

@@ -3,12 +3,7 @@ import cx from "classnames";
 
 import { createChart } from "krasulya-lightweight-charts";
 
-import {
-  USD_DECIMALS,
-  SWAP,
-  formatAmount,
-  formatDateTime,
-} from "../../Helpers";
+import { USD_DECIMALS, SWAP, formatAmount, formatDateTime } from "../../Helpers";
 import { useMlpPrices } from "../../Api";
 
 import { getTokens } from "../../data/Tokens";
@@ -104,8 +99,8 @@ const getChartOptions = (width, height) => ({
   priceScale: {
     borderVisible: false,
     scaleMargins: {
-        top: 0.5,
-        bottom: 0.3,
+      top: 0.5,
+      bottom: 0.3,
     },
   },
   crosshair: {
@@ -120,11 +115,7 @@ const getChartOptions = (width, height) => ({
 });
 
 export default function MlpPriceChart(props) {
-  const {
-    chainId,
-    sidebarVisible,
-    mlpPrice
-  } = props;
+  const { chainId, sidebarVisible, mlpPrice } = props;
 
   const priceData = useMlpPrices(chainId, mlpPrice);
 
@@ -150,18 +141,21 @@ export default function MlpPriceChart(props) {
         setHoveredPoint(null);
         return;
       }
-      const priceDataById = priceData.reduce((o, stat) => ({
-        ...o,
-        [stat.time]: {
-          ...stat
-        }
-      }), {})
+      const priceDataById = priceData.reduce(
+        (o, stat) => ({
+          ...o,
+          [stat.time]: {
+            ...stat,
+          },
+        }),
+        {}
+      );
 
       const hoveredPoint = priceDataById[evt.time];
       if (!hoveredPoint) {
-        return
+        return;
       }
-      
+
       setHoveredPoint(hoveredPoint);
     },
     [setHoveredPoint, priceData]
@@ -186,10 +180,10 @@ export default function MlpPriceChart(props) {
   }, [ref, priceData, currentChart, onCrosshairMove]);
 
   // useEffect(() => {
-    // const interval = setInterval(() => {
-      // updatePriceData(undefined, true);
-    // }, 60 * 1000);
-    // return () => clearInterval(interval);
+  // const interval = setInterval(() => {
+  // updatePriceData(undefined, true);
+  // }, 60 * 1000);
+  // return () => clearInterval(interval);
   // }, [updatePriceData]);
 
   useEffect(() => {
@@ -287,9 +281,7 @@ export default function MlpPriceChart(props) {
   return (
     <div className="Mlp-price-chart ExchangeChart tv" ref={ref}>
       <div className="ExchangeChart-bottom App-box App-box-border">
-        <div className="ExchangeChart-bottom-header">
-          {statsHtml}
-        </div>
+        <div className="ExchangeChart-bottom-header">{statsHtml}</div>
         <div className="ExchangeChart-bottom-content" ref={chartRef}></div>
       </div>
     </div>

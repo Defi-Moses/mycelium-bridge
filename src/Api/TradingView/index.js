@@ -56,10 +56,10 @@ export const generateDataFeed = (priceData) => {
             ...el,
             time: el.time * 1000, //TradingView requires bar time in ms
           };
-        })
+        });
 
         if (!periodParams.firstDataRequest) {
-          onResult([], { noData: true});
+          onResult([], { noData: true });
         } else if (bars.length < periodParams.countBack) {
           onResult(bars, { noData: false });
         } else {

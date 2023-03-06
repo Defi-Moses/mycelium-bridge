@@ -50,7 +50,7 @@ function fillGaps(prices, periodSeconds) {
     }
 
     prevTime = time;
-    
+
     if (low === 0) {
       newPrices.push({
         ...prices[i],
@@ -121,7 +121,7 @@ async function getChartPricesFromStats(_chainId, symbol, period) {
     if (i !== 0) {
       // set open to close
       // prices are sorted in timestamp ascending order
-      open = prices[i-1].c;
+      open = prices[i - 1].c;
     }
     return {
       time: t + timezoneOffset,
@@ -306,4 +306,3 @@ function getStablePriceData(period) {
   }
   return priceData;
 }
-

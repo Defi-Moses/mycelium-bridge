@@ -1,11 +1,11 @@
 import React from "react";
 import { ETH_DECIMALS, formatAmount, shortenAddress, USD_DECIMALS, formatTimeTill } from "../../Helpers";
 import * as Styles from "./Rewards.styles";
-import Davatar from '@davatar/react';
-import { EmptyAvatar } from './Rewards.styles'
+import Davatar from "@davatar/react";
+import { EmptyAvatar } from "./Rewards.styles";
 import cx from "classnames";
 import RewardsRoundSelect from "../../components/RewardsRoundSelect/RewardsRoundSelect";
-import {RewardsButton} from "../../Shared.styles";
+import { RewardsButton } from "../../Shared.styles";
 
 export default function TraderRewards(props) {
   const {
@@ -27,7 +27,7 @@ export default function TraderRewards(props) {
     handleClaim,
     claimDelay,
     isClaiming,
-    hasClaimed
+    hasClaimed,
   } = props;
 
   let timeTillRewards;
@@ -40,7 +40,7 @@ export default function TraderRewards(props) {
       <Styles.AccountBanner className="App-card">
         {active && (
           <Styles.AccountBannerAddresses>
-            {account ? <Davatar size={40} address ={account} /> : <EmptyAvatar />}
+            {account ? <Davatar size={40} address={account} /> : <EmptyAvatar />}
             <Styles.AppCardTitle>{ensName || shortenAddress(account, 13)}</Styles.AppCardTitle>
             <Styles.AccountBannerShortenedAddress> Wallet address </Styles.AccountBannerShortenedAddress>
           </Styles.AccountBannerAddresses>
@@ -75,11 +75,11 @@ export default function TraderRewards(props) {
       <Styles.RewardsData className="App-card">
         <Styles.AppCardTitle>Rewards data</Styles.AppCardTitle>
         <RewardsRoundSelect
-            allRoundsRewardsData={allRoundsRewardsData}
-            setSelectedRound={setSelectedRound}
-            rewardsMessage={rewardsMessage}
-            trackAction={trackAction}
-            timeTillRewards={timeTillRewards}
+          allRoundsRewardsData={allRoundsRewardsData}
+          setSelectedRound={setSelectedRound}
+          rewardsMessage={rewardsMessage}
+          trackAction={trackAction}
+          timeTillRewards={timeTillRewards}
         />
         <Styles.RewardsDataBoxes>
           <Styles.RewardsDataBox>
@@ -87,31 +87,50 @@ export default function TraderRewards(props) {
             <Styles.LargeText> {`$${formatAmount(userRoundData?.volume, USD_DECIMALS, 2, true)}`}</Styles.LargeText>
           </Styles.RewardsDataBox>
           <Styles.RewardsDataBox className={cx({ claimable: !hasClaimed })}>
-            <Styles.RewardsDataBoxTitle>{hasClaimed ? 'Claimed Rewards' : 'Claimable Rewards'}</Styles.RewardsDataBoxTitle>
+            <Styles.RewardsDataBoxTitle>
+              {hasClaimed ? "Claimed Rewards" : "Claimable Rewards"}
+            </Styles.RewardsDataBoxTitle>
             <div>
-              <Styles.LargeText>{`${formatAmount(userRoundData?.totalReward, ETH_DECIMALS, 4, true)} WETH`}</Styles.LargeText>
+              <Styles.LargeText>{`${formatAmount(
+                userRoundData?.totalReward,
+                ETH_DECIMALS,
+                4,
+                true
+              )} WETH`}</Styles.LargeText>
               <span> {` ($${formatAmount(userRoundData?.rewardAmountUsd, USD_DECIMALS, 2, true)})`}</span>
             </div>
           </Styles.RewardsDataBox>
         </Styles.RewardsDataBoxes>
-        {active && <RewardsButton
-          className={'App-cta large'}
-          disabled={!userRoundData?.totalReward || userRoundData.totalReward.eq(0) || isClaiming || hasClaimed || hasClaimed === undefined || latestRound || claimDelay}
-          onClick={handleClaim}
-        >
-          Claim WETH
-        </RewardsButton>}
+        {active && (
+          <RewardsButton
+            className={"App-cta large"}
+            disabled={
+              !userRoundData?.totalReward ||
+              userRoundData.totalReward.eq(0) ||
+              isClaiming ||
+              hasClaimed ||
+              hasClaimed === undefined ||
+              latestRound ||
+              claimDelay
+            }
+            onClick={handleClaim}
+          >
+            Claim WETH
+          </RewardsButton>
+        )}
         {!active && (
           <RewardsButton className="App-cta large" onClick={() => connectWallet()}>
             Connect Wallet
           </RewardsButton>
         )}
       </Styles.RewardsData>
-      {hasClaimed && <Styles.ClaimedRewards>
-        <span />
-        <span>WETH has been claimed</span>
-        <span />
-      </Styles.ClaimedRewards>}
+      {hasClaimed && (
+        <Styles.ClaimedRewards>
+          <span />
+          <span>WETH has been claimed</span>
+          <span />
+        </Styles.ClaimedRewards>
+      )}
     </Styles.PersonalRewardsContainer>
   );
 }

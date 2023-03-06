@@ -27,9 +27,7 @@ export default function BuyMYC() {
           <div className="section-title-block">
             <div className="section-title-content">
               <div className="Page-title">Buy / Transfer ETH</div>
-              <div className="Page-description">
-                ETH is needed on Arbitrum to purchase MYC.
-              </div>
+              <div className="Page-description">ETH is needed on Arbitrum to purchase MYC.</div>
             </div>
           </div>
         )}

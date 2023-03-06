@@ -20,9 +20,7 @@ import {
   getSpread,
 } from "../../Helpers";
 
-import {
-  SLIPPAGE_BPS_KEY
-} from '../../config/localstorage';
+import { SLIPPAGE_BPS_KEY } from "../../config/localstorage";
 
 import { getConstant } from "../../Constants";
 import { getContract } from "../../Addresses";

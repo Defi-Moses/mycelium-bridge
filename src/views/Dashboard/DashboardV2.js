@@ -462,7 +462,8 @@ export default function DashboardV2() {
         <div className="section-title-block">
           <div className="section-title-content">
             <div className="Page-title">
-              Stats {(chainId === ARBITRUM || chainId === ARBITRUM_GOERLI) && (
+              Stats{" "}
+              {(chainId === ARBITRUM || chainId === ARBITRUM_GOERLI) && (
                 <img src={arbitrum24Icon} alt="arbitrum24Icon" />
               )}
             </div>

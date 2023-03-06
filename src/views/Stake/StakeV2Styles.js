@@ -1,14 +1,13 @@
-import styled from 'styled-components';
+import styled from "styled-components";
 
-const lg = '1080px';
-const sm = '550px';
+const lg = "1080px";
+const sm = "550px";
 
 export const StakeV2Content = styled.div`
   margin-left: auto;
   margin-right: auto;
   width: 100%;
-
-`
+`;
 
 export const StakeV2Cards = styled.div`
   display: grid;
@@ -22,7 +21,7 @@ export const StakeV2Cards = styled.div`
   @media (max-width: ${lg}) {
     grid-template-columns: 1fr;
   }
-`
+`;
 
 export const StakeV2Card = styled.div`
   // chart and mlp info
@@ -33,12 +32,12 @@ export const StakeV2Card = styled.div`
       min-width: 100%;
     }
   }
-`
+`;
 
 export const Card = styled.div`
   border: 1px solid var(--cell-stroke);
   border-radius: 4px;
-`
+`;
 
 export const CardTitle = styled.div`
   padding: 0.75rem 1rem;
@@ -52,7 +51,7 @@ export const CardTitle = styled.div`
   img {
     width: 24px;
   }
-`
+`;
 
 export const MlpInfo = styled.div`
   display: grid;
@@ -61,12 +60,12 @@ export const MlpInfo = styled.div`
   @media (max-width: ${sm}) {
     grid-template-columns: 1fr;
   }
-`
+`;
 
 export const VestingInfo = styled.div`
   color: var(--text-primary);
   font-size: 16px;
-`
+`;
 
 export const StakedTokens = styled.div`
   display: flex;
@@ -74,7 +73,7 @@ export const StakedTokens = styled.div`
   background: var(--cell-gradient);
   justify-content: space-between;
   padding: 1rem;
-`
+`;
 
 export const RewardsBanner = styled.div`
   background: var(--cell-gradient);
@@ -82,16 +81,16 @@ export const RewardsBanner = styled.div`
   padding: 0 1rem;
   padding-bottom: 1rem;
   color: var(--text-primary);
-  &:first-child { 
+  &:first-child {
     border-right: 1px solid var(--cell-stroke);
   }
-`
+`;
 
 export const RewardsBannerRow = styled.div`
   display: flex;
   flex-direction: column;
   border-bottom: 1px solid var(--cell-stroke);
-  border-top: ${({ borderTop }) => borderTop ? '1px solid var(--cell-stroke)' : 'none'};
+  border-top: ${({ borderTop }) => (borderTop ? "1px solid var(--cell-stroke)" : "none")};
 
   justify-content: space-between;
   padding: 1rem 0;
@@ -106,7 +105,7 @@ export const RewardsBannerRow = styled.div`
   .App-card-row:last-child {
     margin-bottom: 0;
   }
-`
+`;
 
 export const StakingBannerRow = styled(RewardsBannerRow)`
   padding: 1rem;
@@ -114,19 +113,19 @@ export const StakingBannerRow = styled(RewardsBannerRow)`
   &:last-child {
     border-bottom: none;
   }
-`
+`;
 
 export const RewardsBannerTextWrap = styled.div`
   text-align: right;
-`
+`;
 
 export const RewardsBannerText = styled.div`
-  color: ${({ secondary }) => secondary ? `var(--text-secondary)` : 'var(--text-primary)'};
-  font-size: ${({ large }) => large ? `16px` : '12px'};
-  font-weight: ${({ large }) => large ? 600 : 400};
-  display: ${({ inline }) => inline ? `inline` : 'block'};
-  margin-bottom: ${({ title }) => title ? '0.5rem' : '0'};
-`
+  color: ${({ secondary }) => (secondary ? `var(--text-secondary)` : "var(--text-primary)")};
+  font-size: ${({ large }) => (large ? `16px` : "12px")};
+  font-weight: ${({ large }) => (large ? 600 : 400)};
+  display: ${({ inline }) => (inline ? `inline` : "block")};
+  margin-bottom: ${({ title }) => (title ? "0.5rem" : "0")};
+`;
 
 export const ModalRow = styled.div`
   border-bottom: 1px solid var(--cell-stroke);
@@ -145,42 +144,41 @@ export const ModalRow = styled.div`
   &:last-child {
     border-bottom: none;
   }
-`
+`;
 
 export const ModalRowHeader = styled.div`
   color: var(--text-secondary);
   margin-bottom: 4px;
-`
+`;
 
 export const ModalRowText = styled.div`
-  color: ${({ secondary }) => secondary ? `var(--text-secondary)` : 'var(--text-primary)'};
-  font-size: ${({ large }) => large ? `16px` : '12px'};
-  font-weight: ${({ large }) => large ? 600 : 400};
-  display: ${({ inline }) => inline ? `inline` : 'block'};
-`
+  color: ${({ secondary }) => (secondary ? `var(--text-secondary)` : "var(--text-primary)")};
+  font-size: ${({ large }) => (large ? `16px` : "12px")};
+  font-weight: ${({ large }) => (large ? 600 : 400)};
+  display: ${({ inline }) => (inline ? `inline` : "block")};
+`;
 
-export const Buttons = styled.div`
-`
+export const Buttons = styled.div``;
 
 /* CLAIM MODAL */
 export const ClaimModal = styled.div`
   .AppOrder-ball {
     pointer-events: none;
   }
-`
+`;
 
 export const SpreadCapture = styled.div`
   & > .buy-input .Exchange-swap-section-top {
-    font-size: 16px!important;
+    font-size: 16px !important;
   }
 
   & > .buy-input {
     border: 1px solid var(--cell-highlight);
   }
-`
+`;
 
 export const SpreadCaptureDescription = styled.div`
   color: var(--text-secondary);
   margin-top: 0.5rem;
   margin-bottom: 0.5rem;
-`
+`;

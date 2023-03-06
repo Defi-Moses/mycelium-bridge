@@ -32,7 +32,6 @@ import {
   ETH_DECIMALS,
 } from "../../Helpers";
 
-
 import { callContract } from "../../Api";
 
 import ReaderV2 from "../../abis/ReaderV2.json";
@@ -72,7 +71,7 @@ export default function ClaimModal(props) {
     processedData,
     userSpreadCapture,
     userSpreadCaptureEth,
-    setHasRecentlyClaimed
+    setHasRecentlyClaimed,
   } = props;
 
   const [isClaiming, setIsClaiming] = useState(false);
@@ -99,7 +98,6 @@ export default function ClaimModal(props) {
     [chainId, "StakeV2-claim-should-claim-spread-capture"],
     true
   );
-
 
   const history = useHistory();
   const whitelistedTokens = getWhitelistedTokens(chainId);
@@ -188,10 +186,10 @@ export default function ClaimModal(props) {
 
   useEffect(() => {
     if (userSpreadCapture && mlpPrice) {
-      let mlpAmount = userSpreadCapture.mul(expandDecimals(1, MLP_DECIMALS)).div(mlpPrice)
-      setMlpValue(formatAmount(mlpAmount, MLP_DECIMALS))
+      let mlpAmount = userSpreadCapture.mul(expandDecimals(1, MLP_DECIMALS)).div(mlpPrice);
+      setMlpValue(formatAmount(mlpAmount, MLP_DECIMALS));
     }
-  }, [userSpreadCapture, mlpPrice])
+  }, [userSpreadCapture, mlpPrice]);
 
   const swapToken = getToken(chainId, swapTokenAddress);
   const swapTokenInfo = getTokenInfo(infoTokens, swapTokenAddress);
@@ -240,16 +238,7 @@ export default function ClaimModal(props) {
     };
 
     updateSwapAmounts();
-  }, [
-    swapAmount,
-    mlpAmount,
-    swapToken,
-    swapTokenAddress,
-    infoTokens,
-    mlpPrice,
-    usdgSupply,
-    totalTokenWeights,
-  ]);
+  }, [swapAmount, mlpAmount, swapToken, swapTokenAddress, infoTokens, mlpPrice, usdgSupply, totalTokenWeights]);
 
   useEffect(() => {
     window.scrollTo(0, 0);
@@ -258,7 +247,7 @@ export default function ClaimModal(props) {
   const getError = () => {
     if (shouldClaimSpreadCapture) {
       const gasTokenInfo = getTokenInfo(infoTokens, ethers.constants.AddressZero);
-      if (gasTokenInfo.balance?.eq(0)){
+      if (gasTokenInfo.balance?.eq(0)) {
         return ["Not enough ETH for gas"];
       }
 
@@ -301,7 +290,6 @@ export default function ClaimModal(props) {
     const params =
       swapTokenAddress === AddressZero ? [mlpAmount, minOut, account] : [swapTokenAddress, mlpAmount, minOut, account];
 
-
     return callContract(chainId, contract, method, params, {
       sentMsg: "Sell submitted!",
       failMsg: "Sell failed.",
@@ -315,7 +303,7 @@ export default function ClaimModal(props) {
     })
       .then(async () => {
         trackMlpTrade(3, "Sell MLP");
-        setHasRecentlyClaimed(Date.now())
+        setHasRecentlyClaimed(Date.now());
       })
       .finally(() => {
         setIsSubmitting(false);
@@ -385,7 +373,7 @@ export default function ClaimModal(props) {
   // Segment Analytics Page tracking
   useEffect(() => {
     if (elementsLoaded && analytics && !pageTracked) {
-      const tokenToPay = "MLP"
+      const tokenToPay = "MLP";
       const tokenToReceive = getToken(chainId, swapTokenAddress).symbol;
       const traits = {
         action: "Withdraw Spread Capture",
@@ -395,16 +383,7 @@ export default function ClaimModal(props) {
       trackPageWithTraits(traits);
       setPageTracked(true); // Prevent Page function being called twice
     }
-  }, [
-    chainId,
-    pageTracked,
-    swapTokenAddress,
-    elementsLoaded,
-    trackPageWithTraits,
-    history.location.hash,
-    analytics,
-  ]);
-
+  }, [chainId, pageTracked, swapTokenAddress, elementsLoaded, trackPageWithTraits, history.location.hash, analytics]);
 
   const isPrimaryEnabled = () => {
     if (!active) {
@@ -436,7 +415,7 @@ export default function ClaimModal(props) {
       return error;
     }
     if (isClaiming) {
-      return 'Claiming...'
+      return "Claiming...";
     } else if (isSubmitting) {
       return "Selling MLP...";
     }
@@ -462,8 +441,7 @@ export default function ClaimModal(props) {
       await sellMlp();
     }
 
-    setIsVisible(false)
-    ;
+    setIsVisible(false);
   };
 
   const claimRewards = async () => {
@@ -511,10 +489,8 @@ export default function ClaimModal(props) {
       <Modal isVisible={isVisible} setIsVisible={setIsVisible} label="Claim Rewards">
         <div className="CompoundModal-menu">
           <StakeV2Styled.ModalRow>
-            <StakeV2Styled.ModalRowHeader>
-              Claim Vested MYC 
-            </StakeV2Styled.ModalRowHeader>
-            {shouldClaimMyc &&
+            <StakeV2Styled.ModalRowHeader>Claim Vested MYC</StakeV2Styled.ModalRowHeader>
+            {shouldClaimMyc && (
               <>
                 <StakeV2Styled.ModalRowText large inline>
                   {formatKeyAmount(processedData, "mlpVesterRewards", 18, 4, true)} MYC
@@ -523,14 +499,12 @@ export default function ClaimModal(props) {
                   (${formatKeyAmount(processedData, "mlpVesterRewardsUsd", USD_DECIMALS, 4, true)})
                 </StakeV2Styled.ModalRowText>
               </>
-            }
+            )}
             <Toggle isChecked={shouldClaimMyc} handleToggle={setShouldClaimMyc} />
           </StakeV2Styled.ModalRow>
           <StakeV2Styled.ModalRow>
-            <StakeV2Styled.ModalRowHeader>
-              Claim esMYC Rewards
-            </StakeV2Styled.ModalRowHeader>
-            {shouldClaimEsMyc &&
+            <StakeV2Styled.ModalRowHeader>Claim esMYC Rewards</StakeV2Styled.ModalRowHeader>
+            {shouldClaimEsMyc && (
               <>
                 <StakeV2Styled.ModalRowText inline large>
                   {formatKeyAmount(processedData, "stakedMlpTrackerRewards", 18, 4)} esMYC
@@ -540,14 +514,12 @@ export default function ClaimModal(props) {
                   {formatKeyAmount(processedData, "stakedMlpTrackerRewardsUsd", USD_DECIMALS, 2, true)})
                 </StakeV2Styled.ModalRowText>
               </>
-            }
+            )}
             <Toggle isChecked={shouldClaimEsMyc} handleToggle={setShouldClaimEsMyc} />
           </StakeV2Styled.ModalRow>
           <StakeV2Styled.ModalRow>
-            <StakeV2Styled.ModalRowHeader>
-              Claim {wrappedTokenSymbol} Rewards
-            </StakeV2Styled.ModalRowHeader>
-            {shouldClaimWeth && 
+            <StakeV2Styled.ModalRowHeader>Claim {wrappedTokenSymbol} Rewards</StakeV2Styled.ModalRowHeader>
+            {shouldClaimWeth && (
               <>
                 <StakeV2Styled.ModalRowText large inline>
                   {formatKeyAmount(processedData, "feeMlpTrackerRewards", 18, 4)} {nativeTokenSymbol} (
@@ -558,7 +530,7 @@ export default function ClaimModal(props) {
                   {formatKeyAmount(processedData, "feeMlpTrackerRewardsUsd", USD_DECIMALS, 2, true)})
                 </StakeV2Styled.ModalRowText>
               </>
-            }
+            )}
             <Toggle isChecked={shouldClaimWeth} handleToggle={setShouldClaimWeth} disabled={shouldConvertWeth} />
           </StakeV2Styled.ModalRow>
           <StakeV2Styled.ModalRow>
@@ -568,28 +540,23 @@ export default function ClaimModal(props) {
             <Toggle isChecked={shouldConvertWeth} handleToggle={toggleConvertWeth} />
           </StakeV2Styled.ModalRow>
           <StakeV2Styled.ModalRow>
-            <StakeV2Styled.ModalRowHeader>
-              Market Making Rewards
-            </StakeV2Styled.ModalRowHeader>
-            {shouldClaimSpreadCapture  &&
+            <StakeV2Styled.ModalRowHeader>Market Making Rewards</StakeV2Styled.ModalRowHeader>
+            {shouldClaimSpreadCapture && (
               <>
                 <StakeV2Styled.ModalRowText large inline>
-                  {formatAmount(userSpreadCaptureEth, ETH_DECIMALS, 5, true, '0.00')} (
-                  {wrappedTokenSymbol})
+                  {formatAmount(userSpreadCaptureEth, ETH_DECIMALS, 5, true, "0.00")} ({wrappedTokenSymbol})
                 </StakeV2Styled.ModalRowText>{" "}
                 <StakeV2Styled.ModalRowText inline secondary>
                   ($
-                  {formatAmount(userSpreadCapture, USD_DECIMALS, 2, true, '0.00')})
+                  {formatAmount(userSpreadCapture, USD_DECIMALS, 2, true, "0.00")})
                 </StakeV2Styled.ModalRowText>
-
                 <StakeV2Styled.SpreadCapture>
                   <StakeV2Styled.SpreadCaptureDescription>
-                    Market Making Rewards are realised in the capital apprecitaion
-                    of your MLP position. Sell a portion of your MLP position to
-                    claim your Market Making Rewards.
+                    Market Making Rewards are realised in the capital apprecitaion of your MLP position. Sell a portion
+                    of your MLP position to claim your Market Making Rewards.
                   </StakeV2Styled.SpreadCaptureDescription>
                   <BuyInputSection
-                    topLeftLabel={'Sell'}
+                    topLeftLabel={"Sell"}
                     staticInput={true}
                     inputValue={mlpValue}
                     balance={payBalance}
@@ -602,10 +569,7 @@ export default function ClaimModal(props) {
 
                   <div className="AppOrder-ball-container">
                     <div className="AppOrder-ball">
-                      <img
-                        src={arrowIcon}
-                        alt="arrowIcon"
-                      />
+                      <img src={arrowIcon} alt="arrowIcon" />
                     </div>
                   </div>
                   <BuyInputSection
@@ -631,7 +595,7 @@ export default function ClaimModal(props) {
                   </BuyInputSection>
                 </StakeV2Styled.SpreadCapture>
               </>
-            }
+            )}
             <Toggle isChecked={shouldClaimSpreadCapture} handleToggle={setShouldClaimSpreadCapture} />
           </StakeV2Styled.ModalRow>
         </div>

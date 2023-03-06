@@ -5,10 +5,7 @@ import cx from "classnames";
 
 import { BsArrowRight } from "react-icons/bs";
 
-import {
-  CLOSE_POSITION_RECEIVE_TOKEN_KEY,
-  SLIPPAGE_BPS_KEY
-} from '../../config/localstorage';
+import { CLOSE_POSITION_RECEIVE_TOKEN_KEY, SLIPPAGE_BPS_KEY } from "../../config/localstorage";
 
 import {
   formatAmount,
@@ -192,7 +189,6 @@ export default function PositionSeller(props) {
     fetcher: fetcher(library, PositionRouter),
   });
 
-
   let [orderOption, setOrderOption] = useState(MARKET);
 
   if (!flagOrdersEnabled) {
@@ -262,8 +258,6 @@ export default function PositionSeller(props) {
   }, [position, orders, triggerPriceUsd, orderOption, nativeTokenAddress]);
 
   const existingOrder = existingOrders[0];
-
-
 
   const needOrderBookApproval = orderOption === STOP && !orderBookApproved;
 
@@ -974,9 +968,7 @@ export default function PositionSeller(props) {
           {shouldShowExistingOrderWarning && renderExistingOrderWarning()}
           <div className="PositionEditor-info-box">
             <div className="Exchange-info-row PositionSeller-receive-row bottom-line">
-              <div className="Exchange-info-label">
-                Receive
-              </div>
+              <div className="Exchange-info-label">Receive</div>
 
               {!isSwapAllowed && receiveToken && (
                 <div className="align-right PositionSelector-selected-receive-token">
@@ -1216,9 +1208,7 @@ export default function PositionSeller(props) {
               </div>
             </div>
             <div className="Exchange-info-row">
-              <div className="Exchange-info-label">
-                Fees
-              </div>
+              <div className="Exchange-info-label">Fees</div>
               <div className="align-right">
                 <Tooltip
                   position="right-top"
@@ -1260,7 +1250,11 @@ export default function PositionSeller(props) {
                       <br />
 
                       <div className="PositionSeller-fee-item">
-                        <a href="https://swaps.docs.mycelium.xyz/protocol-design/trading/fees" target="_blank" rel="noopener noreferrer">
+                        <a
+                          href="https://swaps.docs.mycelium.xyz/protocol-design/trading/fees"
+                          target="_blank"
+                          rel="noopener noreferrer"
+                        >
                           More Info
                         </a>{" "}
                         about fees.

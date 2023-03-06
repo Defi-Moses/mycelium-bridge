@@ -1,5 +1,4 @@
-import styled from 'styled-components';
-
+import styled from "styled-components";
 
 export const TooltipRowValues = styled.ul`
   list-style: none;
@@ -10,11 +9,11 @@ export const TooltipRowValues = styled.ul`
     padding: 0.25rem 0 0 0;
     text-align: right;
   }
-`
+`;
 export const TooltipRowValue = styled.span`
   color: white;
   text-align: right;
-`
+`;
 
 export const TooltipRow = styled.div`
   display: grid;
@@ -41,9 +40,8 @@ export const TooltipRow = styled.div`
       text-align: left;
     }
   }
-
-`
+`;
 
 // .Tooltip-number {
-  // color: white;
+// color: white;
 // }

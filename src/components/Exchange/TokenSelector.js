@@ -26,7 +26,7 @@ export default function TokenSelector(props) {
     showSymbolImage = false,
     showNewCaret = false,
     trackAction,
-    selectedTokenLabel
+    tokenType,
   } = props;
 
   const onSelectToken = (token) => {
@@ -108,9 +108,10 @@ export default function TokenSelector(props) {
                 className="TokenSelector-token-row"
                 onClick={() => {
                   onSelectToken(token);
-                  trackAction && trackAction("Button clicked", {
-                    buttonName: `${props.label} Token Selection modal option - ${token.symbol}`,
-                  });
+                  trackAction &&
+                    trackAction("Button clicked", {
+                      buttonName: `${props.label} Token Selection modal option - ${token.symbol}`,
+                    });
                 }}
                 key={token.address}
               >
@@ -143,29 +144,23 @@ export default function TokenSelector(props) {
           })}
         </div>
       </Modal>
-      {selectedTokenLabel ? (
-        <div className="TokenSelector-box" onClick={() => setIsModalVisible(true)}>
-          {selectedTokenLabel}
-          {!showNewCaret && <BiChevronDown className="TokenSelector-caret" />}
-        </div>
-      ) : (
-        <div
-          className="TokenSelector-box"
-          onClick={() => {
-            setIsModalVisible(true);
-            trackAction && trackAction("Button clicked", {
+      <div
+        className="TokenSelector-box"
+        onClick={() => {
+          setIsModalVisible(true);
+          trackAction &&
+            trackAction("Button clicked", {
               buttonName: `Token selector box`,
             });
-          }}
-        >
-          {tokenInfo.symbol}
-          {showSymbolImage && (
-            <img src={tokenImage && tokenImage.default} alt={tokenInfo.symbol} className="TokenSelector-box-symbol" />
-          )}
-          {showNewCaret && <img src={dropDownIcon} alt="dropDownIcon" className="TokenSelector-box-caret" />}
-          {!showNewCaret && <BiChevronDown className="TokenSelector-caret" />}
-        </div>
-      )}
+        }}
+      >
+        {tokenInfo.symbol}
+        {showSymbolImage && (
+          <img src={tokenImage && tokenImage.default} alt={tokenInfo.symbol} className="TokenSelector-box-symbol" />
+        )}
+        {showNewCaret && <img src={dropDownIcon} alt="dropDownIcon" className="TokenSelector-box-caret" />}
+        {!showNewCaret && <BiChevronDown className="TokenSelector-caret" />}
+      </div>
     </div>
   );
 }
